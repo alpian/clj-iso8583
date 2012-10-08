@@ -1,4 +1,13 @@
-clj-iso8583
-===========
+# clj-iso8583
 
-Parse ISO 8583 messages into Clojure maps and vice versa
+A Clojure library for parsing ISO8583 messages into Clojure maps.
+
+## Usage
+
+Coming soon...
+
+## License
+
+Copyright © 2012 Ian Davies
+
+Distributed under the Eclipse Public License, the same as Clojure.
