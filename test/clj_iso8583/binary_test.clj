@@ -13,5 +13,5 @@
   (binary/set-bits (byte 0x42)) => [1 6])
 
 (fact 
-  (binary/all-set-bits (binary/hex-to-bytes "42 10 01")) => [0 12 17 22]
-  (binary/little-endian-all-set-bits (binary/hex-to-bytes "42 10 00 11 02 C0 48 04")) => [2 7 12 28 32 39 41 42 50 53 62])
+  (binary/set-bits (binary/hex-to-bytes "42 10 01")) => [0 12 17 22]
+  (binary/little-endian-set-bits (binary/hex-to-bytes "42 10 00 11 02 C0 48 04")) => [2 7 12 28 32 39 41 42 50 53 62])

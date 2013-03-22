@@ -3,5 +3,7 @@ pom.xml
 /lib/
 /classes/
 .lein-deps-sum
+.lein-failures
+.lein-repl-history
 .settings
 target
