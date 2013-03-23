@@ -19,7 +19,6 @@
 (defmulti set-bits (fn [input] (if (instance? Iterable input) :iterable :single-byte)))
 
 (defmethod set-bits :single-byte [byte]
-  (println (bytes-to-hex [byte]))
   (keep-indexed #(if %2 %1) (map #(bit-test byte %) (range 0 8))))
 
 (defmethod set-bits :iterable [bytes]

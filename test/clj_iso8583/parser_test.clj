@@ -8,42 +8,46 @@
 
 (declare full-message)
 
+(def fields 
+  {2 {:name :pan
+      :reader 
+      (fn [input] 
+        (let [[length-bytes rest] (split-at 2 input)
+              length (Integer/parseInt (binary/bytes-to-ascii length-bytes))]
+          (split-at length rest)))}})
+
 (defn message-type-of [input]
   (let [[message-type-bytes rest] (split-at 4 input)]
     [(binary/bytes-to-ascii message-type-bytes) rest]))
 
+(defn- bit-set? [bit-index bitmap] 
+  (some #{bit-index} bitmap))
+
 (defn bitmap-of [input]
   (let [[primary-bitmap-bytes rest] (split-at 8 input)
-        primary-set-bits (binary/little-endian-set-bits primary-bitmap-bytes)
-        has-secondary-bitmap (some #{1} primary-set-bits)
-        secondary-set-bits 
-          (if has-secondary-bitmap 
-            (let [[secondary-bitmap-bytes rest] (split-at 8 rest)] (binary/little-endian-set-bits secondary-bitmap-bytes))
-            [])]
-    [(concat primary-set-bits (map #(+ % 64) secondary-set-bits)) rest]))
+        primary-bitmap (binary/little-endian-set-bits primary-bitmap-bytes)]
+    (if (bit-set? 1 primary-bitmap) 
+          (let [[secondary-bitmap-bytes rest] (split-at 8 rest)
+                secondary-bitmap (binary/little-endian-set-bits secondary-bitmap-bytes)]
+            [(concat primary-bitmap (map #(+ % 64) secondary-bitmap)) rest])
+          [primary-bitmap rest])))
 
 (defn parse
   "Parses an ISO message and returns a map of all the fields of that message"
   [input]
   (let [[message-type rest] (message-type-of input)
-        [bitmap rest] (bitmap-of rest)]
+        [bitmap rest] (bitmap-of rest)
+        pan-field (get fields (nth bitmap 1))
+        [pan rest] ((:reader pan-field) rest)]
+    (println bitmap)
     {:message-type message-type
-     :pan bitmap}))
+     :pan (binary/bytes-to-ascii pan)}))
 
 (fact "Can extract the message-type"
   (:message-type (parse (binary/hex-to-bytes full-message))) => "0200")
 
 (fact "Can extract the pan"
-  (println "go!")
-  (:pan (parse (binary/hex-to-bytes full-message))) => "1235")
-
-(comment (deftest can-read-bitmaps
-  (testing "Can read a field from a bitmap"
-    (is (= "1234" (:pan (parse-iso-message (binary/hex-to-bytes "401234"))))))))
-
-(comment (deftest can-read-bitmaps-and-test-with-midje
-  (fact "can read bitmaps"
-    (:pan (parse-iso-message (binary/hex-to-bytes "401234"))) => "1234")))
+  (:pan (parse (binary/hex-to-bytes full-message))) => "5813390006433321")
 
 (defn field-definition-of [index field-definitions]
   (first (filter (fn [[key value]] (= index (:index value))) field-definitions)))
