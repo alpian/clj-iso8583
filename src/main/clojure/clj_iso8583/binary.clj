@@ -1,4 +1,5 @@
-(ns clj-iso8583.binary)
+(ns clj-iso8583.binary
+  (:import java.nio.charset.Charset))
 
 (defn ubyte
   "Coerce to unsigned byte"
@@ -7,15 +8,18 @@
   [#^Number x] (. x (byteValue)))
 
 (defn bytes-to-ascii [bytes]
-  (new String (byte-array bytes)))
+  (new String (byte-array bytes) (Charset/forName "ISO-8859-1")))
+
+(defn bytes-to-hex [bytes]
+  (map #(format "%02X" %) bytes))
 
 (defn hex-to-bytes [hex]
-  
   (map #(ubyte (Integer/parseInt % 16)) (re-seq #"[0-9A-Fa-f]{2}" hex)))
 
 (defmulti set-bits (fn [input] (if (instance? Iterable input) :iterable :single-byte)))
 
 (defmethod set-bits :single-byte [byte]
+  (println (bytes-to-hex [byte]))
   (keep-indexed #(if %2 %1) (map #(bit-test byte %) (range 0 8))))
 
 (defmethod set-bits :iterable [bytes]

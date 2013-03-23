@@ -9,19 +9,32 @@
 (declare full-message)
 
 (defn message-type-of [input]
-  (let [[message-type-bytes input] (split-at 4 input)]
-    [(binary/bytes-to-ascii message-type-bytes) input]))
+  (let [[message-type-bytes rest] (split-at 4 input)]
+    [(binary/bytes-to-ascii message-type-bytes) rest]))
+
+(defn bitmap-of [input]
+  (let [[primary-bitmap-bytes rest] (split-at 8 input)
+        primary-set-bits (binary/little-endian-set-bits primary-bitmap-bytes)
+        has-secondary-bitmap (some #{1} primary-set-bits)
+        secondary-set-bits 
+          (if has-secondary-bitmap 
+            (let [[secondary-bitmap-bytes rest] (split-at 8 rest)] (binary/little-endian-set-bits secondary-bitmap-bytes))
+            [])]
+    [(concat primary-set-bits (map #(+ % 64) secondary-set-bits)) rest]))
 
 (defn parse
   "Parses an ISO message and returns a map of all the fields of that message"
   [input]
-  (let [[message-type rest] (message-type-of input)]
-    {:message-type message-type}))
+  (let [[message-type rest] (message-type-of input)
+        [bitmap rest] (bitmap-of rest)]
+    {:message-type message-type
+     :pan bitmap}))
 
 (fact "Can extract the message-type"
   (:message-type (parse (binary/hex-to-bytes full-message))) => "0200")
 
 (fact "Can extract the pan"
+  (println "go!")
   (:pan (parse (binary/hex-to-bytes full-message))) => "1235")
 
 (comment (deftest can-read-bitmaps
