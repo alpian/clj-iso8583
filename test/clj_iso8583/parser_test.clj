@@ -8,46 +8,75 @@
 
 (declare full-message)
 
-(def fields 
-  {2 {:name :pan
-      :reader 
-      (fn [input] 
-        (let [[length-bytes rest] (split-at 2 input)
-              length (Integer/parseInt (binary/bytes-to-ascii length-bytes))]
-          (split-at length rest)))}})
+(defn variable-length-field [length-of-length]
+  (fn [input]
+    (let [[length-bytes remaining-input] (split-at length-of-length input)
+          length (Integer/parseInt (binary/bytes-to-ascii length-bytes))
+          [field-bytes remaining-input] (split-at length remaining-input)]
+      [(binary/bytes-to-ascii field-bytes) remaining-input])))
+
+(defn fixed-length-field [length]
+  (fn [input]
+    (let [[field-bytes remaining-input] (split-at length input)]
+      [(binary/bytes-to-ascii field-bytes) remaining-input])))
+
+(def field-definitions 
+  {2 {:name :pan :reader (variable-length-field 2)}
+   3 {:name :processing-code :reader (fixed-length-field 6)}
+   4 {:name :transaction-amount :reader (fixed-length-field 12)}
+   7 {:name :transmission-date-time :reader (fixed-length-field 10)}})
 
 (defn message-type-of [input]
-  (let [[message-type-bytes rest] (split-at 4 input)]
-    [(binary/bytes-to-ascii message-type-bytes) rest]))
+  (let [[message-type-bytes remaining-input] (split-at 4 input)]
+    [(binary/bytes-to-ascii message-type-bytes) remaining-input]))
 
-(defn- bit-set? [bit-index bitmap] 
+(defn- field-set? [bit-index bitmap] 
   (some #{bit-index} bitmap))
 
 (defn bitmap-of [input]
   (let [[primary-bitmap-bytes rest] (split-at 8 input)
         primary-bitmap (binary/little-endian-set-bits primary-bitmap-bytes)]
-    (if (bit-set? 1 primary-bitmap) 
+    (if (field-set? 1 primary-bitmap) 
           (let [[secondary-bitmap-bytes rest] (split-at 8 rest)
                 secondary-bitmap (binary/little-endian-set-bits secondary-bitmap-bytes)]
-            [(concat primary-bitmap (map #(+ % 64) secondary-bitmap)) rest])
+            [(concat (remove #{1} primary-bitmap) (map #(+ % 64) secondary-bitmap)) rest])
           [primary-bitmap rest])))
+
+(defn parse-fields [bitmap input]
+  (loop [field-number (first bitmap)
+         bitmap (rest bitmap)
+         remaining-input input
+         fields {}]
+    (if-let [field-definition (get field-definitions field-number)]
+        (let [reader (:reader field-definition)
+              [field-content remaining-input] (reader remaining-input)]
+          (println fields)
+          (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
+        fields)))
 
 (defn parse
   "Parses an ISO message and returns a map of all the fields of that message"
   [input]
   (let [[message-type rest] (message-type-of input)
         [bitmap rest] (bitmap-of rest)
-        pan-field (get fields (nth bitmap 1))
-        [pan rest] ((:reader pan-field) rest)]
-    (println bitmap)
-    {:message-type message-type
-     :pan (binary/bytes-to-ascii pan)}))
+        fields (parse-fields bitmap rest)]
+    (println fields)
+    (assoc fields :message-type message-type)))
 
 (fact "Can extract the message-type"
   (:message-type (parse (binary/hex-to-bytes full-message))) => "0200")
 
 (fact "Can extract the pan"
   (:pan (parse (binary/hex-to-bytes full-message))) => "5813390006433321")
+
+(fact "Can extract the processing code"
+  (:processing-code (parse (binary/hex-to-bytes full-message))) => "011000")
+
+(fact "Can extract the transaction amount"
+  (:transaction-amount (parse (binary/hex-to-bytes full-message))) => "000000006660")
+
+(fact "Can extract the transmission date-time"
+  (:transmission-date-time (parse (binary/hex-to-bytes full-message))) => "1009150219")
 
 (defn field-definition-of [index field-definitions]
   (first (filter (fn [[key value]] (= index (:index value))) field-definitions)))
