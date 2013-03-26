@@ -23,36 +23,42 @@
 (defn field-definition [field-number name reader & {:keys [decoder] :or {decoder binary/bytes-to-ascii}}]
   [field-number {:name name :reader reader :decoder decoder}])
 
+(defn make-field-definitions [descriptions]
+  (let [make-field-definition #(apply field-definition %)]
+    (into {} 
+      (map make-field-definition descriptions))))
+
 (defn field-definitions [] 
-  (into {} 
-    [(field-definition 2 :pan (variable-length-field 2))
-     (field-definition 3 :processing-code (fixed-length-field 6))
-     (field-definition 4 :transaction-amount (fixed-length-field 12))
-     (field-definition 7 :transmission-date-time (fixed-length-field 10))
-     (field-definition 11 :stan (fixed-length-field 6))
-     (field-definition 12 :local-transaction-time (fixed-length-field 6))
-     (field-definition 13 :local-transaction-date (fixed-length-field 4))
-     (field-definition 14 :card-expiry-date (fixed-length-field 4))
-     (field-definition 15 :transaction-settlement-date (fixed-length-field 4))
-     (field-definition 18 :merchant-type (fixed-length-field 4))
-     (field-definition 22 :pos-entry-mode (fixed-length-field 3))
-     (field-definition 23 :card-sequence-number (fixed-length-field 3))
-     (field-definition 25 :pos-condition-code (fixed-length-field 2))
-     (field-definition 26 :pos-capture-code (fixed-length-field 2))
-     (field-definition 28 :transaction-fee-amount (fixed-length-field 9))
-     (field-definition 30 :transaction-processing-fee (fixed-length-field 9))
-     (field-definition 32 :acquiring-institution-id-code (variable-length-field 2))
-     (field-definition 35 :track-2 (variable-length-field 2))
-     (field-definition 37 :retrieval-reference-number (fixed-length-field 12))
-     (field-definition 40 :service-restriction-code (fixed-length-field 3))
-     (field-definition 41 :terminal-id (fixed-length-field 8))
-     (field-definition 42 :card-acceptor-id (fixed-length-field 15))
-     (field-definition 43 :card-acceptor-name-location (fixed-length-field 40))
-     (field-definition 49 :transaction-currency (fixed-length-field 3))
-     (field-definition 52 :pin-data (fixed-length-field 8) :decoder binary/bytes-to-hex)
-     (field-definition 56 :message-reason-code (variable-length-field 3))
-     (field-definition 100 :receiving-institution-id-code (variable-length-field 2))
-     (field-definition 123 :pos-data-code (variable-length-field 3))
+  (make-field-definitions
+    [[2 :pan (variable-length-field 2)]
+     [3 :processing-code (fixed-length-field 6)]
+     [4 :transaction-amount (fixed-length-field 12)]
+     [7 :transmission-date-time (fixed-length-field 10)]
+     [11 :stan (fixed-length-field 6)]
+     [12 :local-transaction-time (fixed-length-field 6)]
+     [13 :local-transaction-date (fixed-length-field 4)]
+     [14 :card-expiry-date (fixed-length-field 4)]
+     [15 :transaction-settlement-date (fixed-length-field 4)]
+     [18 :merchant-type (fixed-length-field 4)]
+     [22 :pos-entry-mode (fixed-length-field 3)]
+     [23 :card-sequence-number (fixed-length-field 3)]
+     [25 :pos-condition-code (fixed-length-field 2)]
+     [26 :pos-capture-code (fixed-length-field 2)]
+     [28 :transaction-fee-amount (fixed-length-field 9)]
+     [30 :transaction-processing-fee (fixed-length-field 9)]
+     [32 :acquiring-institution-id-code (variable-length-field 2)]
+     [35 :track-2 (variable-length-field 2)]
+     [37 :retrieval-reference-number (fixed-length-field 12)]
+     [40 :service-restriction-code (fixed-length-field 3)]
+     [41 :terminal-id (fixed-length-field 8)]
+     [42 :card-acceptor-id (fixed-length-field 15)]
+     [43 :card-acceptor-name-location (fixed-length-field 40)]
+     [49 :transaction-currency (fixed-length-field 3)]
+     [52 :pin-data (fixed-length-field 8) :decoder binary/bytes-to-hex]
+     [56 :message-reason-code (variable-length-field 3)]
+     [100 :receiving-institution-id-code (variable-length-field 2)]
+     [123 :pos-data-code (variable-length-field 3)]
+     [127 :postilion-private-data (variable-length-field 6)]
      ]))
 
 (defn message-type-of [input]
@@ -82,15 +88,18 @@
               decoder (:decoder field-definition)
               [field-content remaining-input] (reader remaining-input decoder)]
           (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
-        fields))))
+        [fields remaining-input]))))
 
 (defn parse
   "Parses an ISO message and returns a map of all the fields of that message"
   [input]
-  (let [[message-type rest] (message-type-of input)
-        [bitmap rest] (bitmap-of rest)
-        fields (parse-fields bitmap rest)]
-    (assoc fields :message-type message-type)))
+  (let [[message-type remaining-input] (message-type-of input)
+        [bitmap remaining-input] (bitmap-of remaining-input)
+        [fields remaining-input] (parse-fields bitmap remaining-input)
+        parsed-message (assoc fields :message-type message-type)]
+    (clojure.pprint/pprint parsed-message)
+    (println "remaining:" remaining-input)
+    parsed-message))
 
 (defn parsed-message [] (parse (binary/hex-to-bytes full-message)))
 
