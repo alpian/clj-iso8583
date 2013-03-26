@@ -1,107 +1,38 @@
 (ns clj-iso8583.parser-test
-  (:import [java.io File]
-           [java.nio ByteBuffer ByteOrder]
-           [java.util Date])
-  (:require [clj-iso8583.binary :as binary])
-  (:use clojure.test
-        midje.sweet))
+  (:require [clj-iso8583.binary :as binary]
+            [clj-iso8583.parser :as parser]
+            [clj-iso8583.format-iso8583 :as format-iso8583])
+  (:use clojure.test midje.sweet))
 
-(declare full-message)
+(def full-message
+  (clojure.string/join 
+    ["30323030f23e46d529e0910000000000" "10000022313635383133333930303036" "34333333323130313130303030303030" "30303030363636303130303931353032"
+     "31393032383833383131303231393130" "30393135303931303039363031313035" "31303031303031324330303030303030" "30433030303030303030313131323430"
+     "30313030303130333735383133333930" "30303634333333323144313530393232" "30363434303030303031303030313136" "30303230303030303030323230494e54"
+     "3031323334494e543030303031303030" "31202020343638205448524553484f4c" "44204156454e55452020453531303620" "494e5420435459204f4e434131323474"
+     "2b95779b5a223f303034313531303131" "30323030363030303330353031353531" "31323031353135303031303032303031" "32353260101480200000003130303030"
+     "30303034373530474931303030333035" "53537243494e54303153536e6b202030" "32383833383032383833384949303830" "3930345354746c303352424332303132"
+     "313030393030313830323138506f7374" "696c696f6e3a4d657461446174613233" "303138546674693a5549443131313231" "315445524d494e414c5f494431313131"
+     "38546674693a5549443238303c546674" "695549443e3c5549443e544f5247534c" "47493130303033303553537230323030" "3a3032383833383a3130303931353032"
+     "31393a3030363433333332313c2f5549" "443e3c2f546674695549443e32313154" "45524d494e414c5f4944323136494e54" "30313233342020202020202020303937"
+     "37313749636344617461333936343c3f" "786d6c2076657273696f6e3d22312e30" "2220656e636f64696e673d225554462d" "38223f3e3c496363446174613e3c4963"
+     "63526571756573743e3c416d6f756e74" "417574686f72697a65643e3030303030" "303030363135303c2f416d6f756e7441" "7574686f72697a65643e3c416d6f756e"
+     "744f746865723e303030303030303030" "3030303c2f416d6f756e744f74686572" "3e3c4170706c69636174696f6e496e74" "65726368616e676550726f66696c653e"
+     "313830303c2f4170706c69636174696f" "6e496e7465726368616e676550726f66" "696c653e3c4170706c69636174696f6e" "5472616e73616374696f6e436f756e74"
+     "65723e303033363c2f4170706c696361" "74696f6e5472616e73616374696f6e43" "6f756e7465723e3c43727970746f6772" "616d3e33333946413532324644374646"
+     "3135363c2f43727970746f6772616d3e" "3c5465726d696e616c436f756e747279" "436f64653e3132343c2f5465726d696e" "616c436f756e747279436f64653e3c54"
+     "65726d696e616c566572696669636174" "696f6e526573756c743e383038303034" "383030303c2f5465726d696e616c5665" "72696669636174696f6e526573756c74"
+     "3e3c5472616e73616374696f6e437572" "72656e6379436f64653e3132343c2f54" "72616e73616374696f6e43757272656e" "6379436f64653e3c5472616e73616374"
+     "696f6e446174653e3130303431363c2f" "5472616e73616374696f6e446174653e" "3c5472616e73616374696f6e54797065" "3e30313c2f5472616e73616374696f6e"
+     "547970653e3c556e7072656469637461" "626c654e756d6265723e374243433039" "37363c2f556e7072656469637461626c" "654e756d6265723e3c4170706c696361"
+     "74696f6e4964656e7469666965723e41" "303030303030323737313031303c2f41" "70706c69636174696f6e4964656e7469" "666965723e3c43766d526573756c7473"
+     "3e3032303330303c2f43766d52657375" "6c74733e3c4973737565724170706c69" "636174696f6e446174613e3031313041" "30303030333232303030303030303030"
+     "3030303030303030303030303030463c" "2f4973737565724170706c6963617469" "6f6e446174613e3c5465726d696e616c" "4361706162696c69746965733e363034"
+     "3032303c2f5465726d696e616c436170" "6162696c69746965733e3c4368697043" "6f6e646974696f6e436f64653e303c2f" "43686970436f6e646974696f6e436f64"
+     "653e3c43727970746f6772616d496e66" "6f726d6174696f6e446174613e38303c" "2f43727970746f6772616d496e666f72" "6d6174696f6e446174613e3c2f496363"
+     "526571756573743e3c2f496363446174" "613e3033494e54"]))
 
-(defn variable-length-field [length-of-length]
-  (fn [input decoder]
-    (let [[length-bytes remaining-input] (split-at length-of-length input)
-          length (Integer/parseInt (binary/bytes-to-ascii length-bytes))
-          [field-bytes remaining-input] (split-at length remaining-input)]
-      [(binary/bytes-to-ascii field-bytes) remaining-input])))
-
-(defn fixed-length-field [length]
-  (fn [input decoder]
-    (let [[field-bytes remaining-input] (split-at length input)]
-      [(decoder field-bytes) remaining-input])))
-
-(defn field-definition [field-number name reader & {:keys [decoder] :or {decoder binary/bytes-to-ascii}}]
-  [field-number {:name name :reader reader :decoder decoder}])
-
-(defn make-field-definitions [descriptions]
-  (let [make-field-definition #(apply field-definition %)]
-    (into {} 
-      (map make-field-definition descriptions))))
-
-(defn field-definitions [] 
-  (make-field-definitions
-    [[2 :pan (variable-length-field 2)]
-     [3 :processing-code (fixed-length-field 6)]
-     [4 :transaction-amount (fixed-length-field 12)]
-     [7 :transmission-date-time (fixed-length-field 10)]
-     [11 :stan (fixed-length-field 6)]
-     [12 :local-transaction-time (fixed-length-field 6)]
-     [13 :local-transaction-date (fixed-length-field 4)]
-     [14 :card-expiry-date (fixed-length-field 4)]
-     [15 :transaction-settlement-date (fixed-length-field 4)]
-     [18 :merchant-type (fixed-length-field 4)]
-     [22 :pos-entry-mode (fixed-length-field 3)]
-     [23 :card-sequence-number (fixed-length-field 3)]
-     [25 :pos-condition-code (fixed-length-field 2)]
-     [26 :pos-capture-code (fixed-length-field 2)]
-     [28 :transaction-fee-amount (fixed-length-field 9)]
-     [30 :transaction-processing-fee (fixed-length-field 9)]
-     [32 :acquiring-institution-id-code (variable-length-field 2)]
-     [35 :track-2 (variable-length-field 2)]
-     [37 :retrieval-reference-number (fixed-length-field 12)]
-     [40 :service-restriction-code (fixed-length-field 3)]
-     [41 :terminal-id (fixed-length-field 8)]
-     [42 :card-acceptor-id (fixed-length-field 15)]
-     [43 :card-acceptor-name-location (fixed-length-field 40)]
-     [49 :transaction-currency (fixed-length-field 3)]
-     [52 :pin-data (fixed-length-field 8) :decoder binary/bytes-to-hex]
-     [56 :message-reason-code (variable-length-field 3)]
-     [100 :receiving-institution-id-code (variable-length-field 2)]
-     [123 :pos-data-code (variable-length-field 3)]
-     [127 :postilion-private-data (variable-length-field 6)]
-     ]))
-
-(defn message-type-of [input]
-  (let [[message-type-bytes remaining-input] (split-at 4 input)]
-    [(binary/bytes-to-ascii message-type-bytes) remaining-input]))
-
-(defn- field-set? [bit-index bitmap] 
-  (some #{bit-index} bitmap))
-
-(defn bitmap-of [input]
-  (let [[primary-bitmap-bytes rest] (split-at 8 input)
-        primary-bitmap (binary/little-endian-set-bits primary-bitmap-bytes)]
-    (if (field-set? 1 primary-bitmap) 
-          (let [[secondary-bitmap-bytes rest] (split-at 8 rest)
-                secondary-bitmap (binary/little-endian-set-bits secondary-bitmap-bytes)]
-            [(concat (remove #{1} primary-bitmap) (map #(+ % 64) secondary-bitmap)) rest])
-          [primary-bitmap rest])))
-
-(defn parse-fields [bitmap input]
-  (let [field-definitions (field-definitions)]
-    (loop [field-number (first bitmap)
-         bitmap (rest bitmap)
-         remaining-input input
-         fields {}]
-    (if-let [field-definition (get field-definitions field-number)]
-        (let [reader (:reader field-definition)
-              decoder (:decoder field-definition)
-              [field-content remaining-input] (reader remaining-input decoder)]
-          (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
-        [fields remaining-input]))))
-
-(defn parse
-  "Parses an ISO message and returns a map of all the fields of that message"
-  [input]
-  (let [[message-type remaining-input] (message-type-of input)
-        [bitmap remaining-input] (bitmap-of remaining-input)
-        [fields remaining-input] (parse-fields bitmap remaining-input)
-        parsed-message (assoc fields :message-type message-type)]
-    (clojure.pprint/pprint parsed-message)
-    (println "remaining:" remaining-input)
-    parsed-message))
-
-(defn parsed-message [] (parse (binary/hex-to-bytes full-message)))
+(defn parsed-message [] (parser/parse (format-iso8583/field-definitions) (binary/hex-to-bytes full-message)))
 
 (fact "Can extract the message-type"
   (:message-type (parsed-message)) => "0200")
@@ -209,110 +140,6 @@
       (let [field-definition (field-definition-of (first set-field-indices) field-definitions)]
         (cons (extract-field message field-definition) 
               (parse-message (remaining-after message field-definition) (rest set-field-indices) field-definitions))))))
-
-;(parse-message "AABBCC" [1 2 3] {:one {:index 1 :length 1}, :two {:index 2 :length 2}, :three {:index 3 :length 3}})
-
-
-(def full-message
-  (clojure.string/join 
-    ["30323030f23e46d529e0910000000000"
-     "10000022313635383133333930303036"
-     "34333333323130313130303030303030"
-     "30303030363636303130303931353032"
-     "31393032383833383131303231393130"
-     "30393135303931303039363031313035"
-     "31303031303031324330303030303030"
-     "30433030303030303030313131323430"
-     "30313030303130333735383133333930"
-     "30303634333333323144313530393232"
-     "30363434303030303031303030313136"
-     "30303230303030303030323230494e54"
-     "3031323334494e543030303031303030"
-     "31202020343638205448524553484f4c"
-     "44204156454e55452020453531303620"
-     "494e5420435459204f4e434131323474"
-     "2b95779b5a223f303034313531303131"
-     "30323030363030303330353031353531"
-     "31323031353135303031303032303031"
-     "32353260101480200000003130303030"
-     "30303034373530474931303030333035"
-     "53537243494e54303153536e6b202030"
-     "32383833383032383833384949303830"
-     "3930345354746c303352424332303132"
-     "313030393030313830323138506f7374"
-     "696c696f6e3a4d657461446174613233"
-     "303138546674693a5549443131313231"
-     "315445524d494e414c5f494431313131"
-     "38546674693a5549443238303c546674"
-     "695549443e3c5549443e544f5247534c"
-     "47493130303033303553537230323030"
-     "3a3032383833383a3130303931353032"
-     "31393a3030363433333332313c2f5549"
-     "443e3c2f546674695549443e32313154"
-     "45524d494e414c5f4944323136494e54"
-     "30313233342020202020202020303937"
-     "37313749636344617461333936343c3f"
-     "786d6c2076657273696f6e3d22312e30"
-     "2220656e636f64696e673d225554462d"
-     "38223f3e3c496363446174613e3c4963"
-     "63526571756573743e3c416d6f756e74"
-     "417574686f72697a65643e3030303030"
-     "303030363135303c2f416d6f756e7441"
-     "7574686f72697a65643e3c416d6f756e"
-     "744f746865723e303030303030303030"
-     "3030303c2f416d6f756e744f74686572"
-     "3e3c4170706c69636174696f6e496e74"
-     "65726368616e676550726f66696c653e"
-     "313830303c2f4170706c69636174696f"
-     "6e496e7465726368616e676550726f66"
-     "696c653e3c4170706c69636174696f6e"
-     "5472616e73616374696f6e436f756e74"
-     "65723e303033363c2f4170706c696361"
-     "74696f6e5472616e73616374696f6e43"
-     "6f756e7465723e3c43727970746f6772"
-     "616d3e33333946413532324644374646"
-     "3135363c2f43727970746f6772616d3e"
-     "3c5465726d696e616c436f756e747279"
-     "436f64653e3132343c2f5465726d696e"
-     "616c436f756e747279436f64653e3c54"
-     "65726d696e616c566572696669636174"
-     "696f6e526573756c743e383038303034"
-     "383030303c2f5465726d696e616c5665"
-     "72696669636174696f6e526573756c74"
-     "3e3c5472616e73616374696f6e437572"
-     "72656e6379436f64653e3132343c2f54"
-     "72616e73616374696f6e43757272656e"
-     "6379436f64653e3c5472616e73616374"
-     "696f6e446174653e3130303431363c2f"
-     "5472616e73616374696f6e446174653e"
-     "3c5472616e73616374696f6e54797065"
-     "3e30313c2f5472616e73616374696f6e"
-     "547970653e3c556e7072656469637461"
-     "626c654e756d6265723e374243433039"
-     "37363c2f556e7072656469637461626c"
-     "654e756d6265723e3c4170706c696361"
-     "74696f6e4964656e7469666965723e41"
-     "303030303030323737313031303c2f41"
-     "70706c69636174696f6e4964656e7469"
-     "666965723e3c43766d526573756c7473"
-     "3e3032303330303c2f43766d52657375"
-     "6c74733e3c4973737565724170706c69"
-     "636174696f6e446174613e3031313041"
-     "30303030333232303030303030303030"
-     "3030303030303030303030303030463c"
-     "2f4973737565724170706c6963617469"
-     "6f6e446174613e3c5465726d696e616c"
-     "4361706162696c69746965733e363034"
-     "3032303c2f5465726d696e616c436170"
-     "6162696c69746965733e3c4368697043"
-     "6f6e646974696f6e436f64653e303c2f"
-     "43686970436f6e646974696f6e436f64"
-     "653e3c43727970746f6772616d496e66"
-     "6f726d6174696f6e446174613e38303c"
-     "2f43727970746f6772616d496e666f72"
-     "6d6174696f6e446174613e3c2f496363"
-     "526571756573743e3c2f496363446174"
-     "613e3033494e54"]))
 
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]
