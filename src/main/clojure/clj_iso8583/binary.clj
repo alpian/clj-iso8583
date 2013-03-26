@@ -12,7 +12,7 @@
   (new String (byte-array bytes) (Charset/forName "ISO-8859-1")))
 
 (defn bytes-to-hex [bytes]
-  (apply str (map #(format "%02X" %) bytes)))
+  (apply str (map #(format "%02X" (byte %)) bytes)))
 
 (defn hex-to-bytes [hex]
   (map #(ubyte (Integer/parseInt % 16)) (re-seq #"[0-9A-Fa-f]{2}" hex)))

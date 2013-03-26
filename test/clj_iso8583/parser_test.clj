@@ -123,26 +123,6 @@
 (fact "Can extract the pos data code"
   (:pos-data-code (parsed-message)) => "511201515001002")
 
-
-(defn field-definition-of [index field-definitions]
-  (first (filter (fn [[key value]] (= index (:index value))) field-definitions)))
-
-(defn extract-field 
-  [message field-definition]
-  (subs message 0 (:length (second field-definition))))
-
-(defn remaining-after 
-  [message field-definition]
-  (subs message (:length (second field-definition))))
-
-(defn parse-message
-  [message set-field-indices field-definitions]
-  (lazy-seq
-    (when (not-empty set-field-indices)
-      (let [field-definition (field-definition-of (first set-field-indices) field-definitions)]
-        (cons (extract-field message field-definition) 
-              (parse-message (remaining-after message field-definition) (rest set-field-indices) field-definitions))))))
-
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]
 ;   [Fixed  n       6 006] 003 [011000]
