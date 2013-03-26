@@ -5,13 +5,14 @@
   "Coerce to unsigned byte"
   {:tag Byte
    :inline (fn  [x] `(. com.ind.clojure.Binary (unsignedByteCast ~x)))}
-  [#^Number x] (. x (byteValue)))
+  [#^Number x]
+  (. x (byteValue)))
 
 (defn bytes-to-ascii [bytes]
   (new String (byte-array bytes) (Charset/forName "ISO-8859-1")))
 
 (defn bytes-to-hex [bytes]
-  (map #(format "%02X" %) bytes))
+  (apply str (map #(format "%02X" %) bytes)))
 
 (defn hex-to-bytes [hex]
   (map #(ubyte (Integer/parseInt % 16)) (re-seq #"[0-9A-Fa-f]{2}" hex)))

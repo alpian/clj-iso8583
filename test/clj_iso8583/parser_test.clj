@@ -9,22 +9,51 @@
 (declare full-message)
 
 (defn variable-length-field [length-of-length]
-  (fn [input]
+  (fn [input decoder]
     (let [[length-bytes remaining-input] (split-at length-of-length input)
           length (Integer/parseInt (binary/bytes-to-ascii length-bytes))
           [field-bytes remaining-input] (split-at length remaining-input)]
       [(binary/bytes-to-ascii field-bytes) remaining-input])))
 
 (defn fixed-length-field [length]
-  (fn [input]
+  (fn [input decoder]
     (let [[field-bytes remaining-input] (split-at length input)]
-      [(binary/bytes-to-ascii field-bytes) remaining-input])))
+      [(decoder field-bytes) remaining-input])))
 
-(def field-definitions 
-  {2 {:name :pan :reader (variable-length-field 2)}
-   3 {:name :processing-code :reader (fixed-length-field 6)}
-   4 {:name :transaction-amount :reader (fixed-length-field 12)}
-   7 {:name :transmission-date-time :reader (fixed-length-field 10)}})
+(defn field-definition [field-number name reader & {:keys [decoder] :or {decoder binary/bytes-to-ascii}}]
+  [field-number {:name name :reader reader :decoder decoder}])
+
+(defn field-definitions [] 
+  (into {} 
+    [(field-definition 2 :pan (variable-length-field 2))
+     (field-definition 3 :processing-code (fixed-length-field 6))
+     (field-definition 4 :transaction-amount (fixed-length-field 12))
+     (field-definition 7 :transmission-date-time (fixed-length-field 10))
+     (field-definition 11 :stan (fixed-length-field 6))
+     (field-definition 12 :local-transaction-time (fixed-length-field 6))
+     (field-definition 13 :local-transaction-date (fixed-length-field 4))
+     (field-definition 14 :card-expiry-date (fixed-length-field 4))
+     (field-definition 15 :transaction-settlement-date (fixed-length-field 4))
+     (field-definition 18 :merchant-type (fixed-length-field 4))
+     (field-definition 22 :pos-entry-mode (fixed-length-field 3))
+     (field-definition 23 :card-sequence-number (fixed-length-field 3))
+     (field-definition 25 :pos-condition-code (fixed-length-field 2))
+     (field-definition 26 :pos-capture-code (fixed-length-field 2))
+     (field-definition 28 :transaction-fee-amount (fixed-length-field 9))
+     (field-definition 30 :transaction-processing-fee (fixed-length-field 9))
+     (field-definition 32 :acquiring-institution-id-code (variable-length-field 2))
+     (field-definition 35 :track-2 (variable-length-field 2))
+     (field-definition 37 :retrieval-reference-number (fixed-length-field 12))
+     (field-definition 40 :service-restriction-code (fixed-length-field 3))
+     (field-definition 41 :terminal-id (fixed-length-field 8))
+     (field-definition 42 :card-acceptor-id (fixed-length-field 15))
+     (field-definition 43 :card-acceptor-name-location (fixed-length-field 40))
+     (field-definition 49 :transaction-currency (fixed-length-field 3))
+     (field-definition 52 :pin-data (fixed-length-field 8) :decoder binary/bytes-to-hex)
+     (field-definition 56 :message-reason-code (variable-length-field 3))
+     (field-definition 100 :receiving-institution-id-code (variable-length-field 2))
+     (field-definition 123 :pos-data-code (variable-length-field 3))
+     ]))
 
 (defn message-type-of [input]
   (let [[message-type-bytes remaining-input] (split-at 4 input)]
@@ -43,16 +72,17 @@
           [primary-bitmap rest])))
 
 (defn parse-fields [bitmap input]
-  (loop [field-number (first bitmap)
+  (let [field-definitions (field-definitions)]
+    (loop [field-number (first bitmap)
          bitmap (rest bitmap)
          remaining-input input
          fields {}]
     (if-let [field-definition (get field-definitions field-number)]
         (let [reader (:reader field-definition)
-              [field-content remaining-input] (reader remaining-input)]
-          (println fields)
+              decoder (:decoder field-definition)
+              [field-content remaining-input] (reader remaining-input decoder)]
           (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
-        fields)))
+        fields))))
 
 (defn parse
   "Parses an ISO message and returns a map of all the fields of that message"
@@ -60,23 +90,97 @@
   (let [[message-type rest] (message-type-of input)
         [bitmap rest] (bitmap-of rest)
         fields (parse-fields bitmap rest)]
-    (println fields)
     (assoc fields :message-type message-type)))
 
+(defn parsed-message [] (parse (binary/hex-to-bytes full-message)))
+
 (fact "Can extract the message-type"
-  (:message-type (parse (binary/hex-to-bytes full-message))) => "0200")
+  (:message-type (parsed-message)) => "0200")
 
 (fact "Can extract the pan"
-  (:pan (parse (binary/hex-to-bytes full-message))) => "5813390006433321")
+  (:pan (parsed-message)) => "5813390006433321")
 
 (fact "Can extract the processing code"
-  (:processing-code (parse (binary/hex-to-bytes full-message))) => "011000")
+  (:processing-code (parsed-message)) => "011000")
 
 (fact "Can extract the transaction amount"
-  (:transaction-amount (parse (binary/hex-to-bytes full-message))) => "000000006660")
+  (:transaction-amount (parsed-message)) => "000000006660")
 
 (fact "Can extract the transmission date-time"
-  (:transmission-date-time (parse (binary/hex-to-bytes full-message))) => "1009150219")
+  (:transmission-date-time (parsed-message)) => "1009150219")
+
+(fact "Can extract the stan"
+  (:stan (parsed-message)) => "028838")
+
+(fact "Can extract the local transaction time"
+  (:local-transaction-time (parsed-message)) => "110219")
+
+(fact "Can extract the local transaction date"
+  (:local-transaction-date (parsed-message)) => "1009")
+
+(fact "Can extract the card expiry date"
+  (:card-expiry-date (parsed-message)) => "1509")
+
+(fact "Can extract the transaction settlement date"
+  (:transaction-settlement-date (parsed-message)) => "1009")
+
+(fact "Can extract the merchant type"
+  (:merchant-type (parsed-message)) => "6011")
+
+(fact "Can extract the pos entry mode"
+  (:pos-entry-mode (parsed-message)) => "051")
+
+(fact "Can extract the card sequence number"
+  (:card-sequence-number (parsed-message)) => "001")
+
+(fact "Can extract the pos condition code"
+  (:pos-condition-code (parsed-message)) => "00")
+
+(fact "Can extract the pos capture code"
+  (:pos-capture-code (parsed-message)) => "12")
+
+(fact "Can extract the transaction fee amount"
+  (:transaction-fee-amount (parsed-message)) => "C00000000")
+
+(fact "Can extract the transaction processing fee"
+  (:transaction-processing-fee (parsed-message)) => "C00000000")
+
+(fact "Can extract the acquiring institution id code"
+  (:acquiring-institution-id-code (parsed-message)) => "12400100010")
+
+(fact "Can extract the track 2"
+  (:track-2 (parsed-message)) => "5813390006433321D15092206440000010001")
+
+(fact "Can extract the retrieval reference number"
+  (:retrieval-reference-number (parsed-message)) => "160020000000")
+
+(fact "Can extract the service restriction code"
+  (:service-restriction-code (parsed-message)) => "220")
+
+(fact "Can extract the terminal id"
+  (:terminal-id (parsed-message)) => "INT01234")
+
+(fact "Can extract the card acceptor id"
+  (:card-acceptor-id (parsed-message)) => "INT000010001   ")
+
+(fact "Can extract the card acceptor name location"
+  (:card-acceptor-name-location (parsed-message)) => "468 THRESHOLD AVENUE  E5106 INT CTY ONCA")
+
+(fact "Can extract the transaction currency"
+  (:transaction-currency (parsed-message)) => "124")
+
+(fact "Can extract the pin data"
+  (:pin-data (parsed-message)) => "742B95779B5A223F")
+
+(fact "Can extract the message reason code"
+  (:message-reason-code (parsed-message)) => "1510")
+
+(fact "Can extract the receiving institution id code"
+  (:receiving-institution-id-code (parsed-message)) => "02006000305")
+
+(fact "Can extract the pos data code"
+  (:pos-data-code (parsed-message)) => "511201515001002")
+
 
 (defn field-definition-of [index field-definitions]
   (first (filter (fn [[key value]] (= index (:index value))) field-definitions)))
