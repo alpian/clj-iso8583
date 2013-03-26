@@ -29,11 +29,16 @@
           (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
         [fields remaining-input])))
 
-(defn parse
+(defn parse-bitmap-message [field-definitions input]
+  (let [[bitmap remaining-input] (bitmap-of input)]
+    (parse-fields field-definitions bitmap remaining-input)))
+
+(defn parse-full-message
   "Parses an ISO message and returns a map of all the fields of that message"
   [field-definitions input]
   (let [[message-type remaining-input] (message-type-of input)
-        [bitmap remaining-input] (bitmap-of remaining-input)
-        [fields remaining-input] (parse-fields field-definitions bitmap remaining-input)
+        [fields remaining-input] (parse-bitmap-message field-definitions remaining-input)
         parsed-message (assoc fields :message-type message-type)]
     parsed-message))
+
+(defn parser [field-definitions] (partial parse-full-message field-definitions))

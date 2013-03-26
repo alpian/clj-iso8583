@@ -32,7 +32,9 @@
      "653e3c43727970746f6772616d496e66" "6f726d6174696f6e446174613e38303c" "2f43727970746f6772616d496e666f72" "6d6174696f6e446174613e3c2f496363"
      "526571756573743e3c2f496363446174" "613e3033494e54"]))
 
-(defn parsed-message [] (parser/parse (format-iso8583/field-definitions) (binary/hex-to-bytes full-message)))
+(defn parsed-message [] 
+  (let [parser (parser/parser (format-iso8583/field-definitions))] 
+    (parser (binary/hex-to-bytes full-message))))
 
 (fact "Can extract the message-type"
   (:message-type (parsed-message)) => "0200")
