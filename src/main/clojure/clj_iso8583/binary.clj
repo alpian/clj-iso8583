@@ -14,6 +14,9 @@
 (defn bytes-to-hex [bytes]
   (apply str (map #(format "%02X" (byte %)) bytes)))
 
+(defn long-to-bytes [number]
+  (byte-array (map #(ubyte (bit-and (long 0xFF) (bit-shift-right number %))) (reverse (range 0 64 8)))))
+
 (defn hex-to-bytes [hex]
   (map #(ubyte (Integer/parseInt % 16)) (re-seq #"[0-9A-Fa-f]{2}" hex)))
 

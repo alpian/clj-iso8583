@@ -41,6 +41,8 @@
     [(binary/bytes-to-ascii first-byte)
      (binary/bytes-to-ascii (binary/hex-to-bytes "00000000000000"))])))
 
+(defn field-definition-for [])
+
 (defn write [field-definitions fields] 
   (str 
     (:message-type fields)
