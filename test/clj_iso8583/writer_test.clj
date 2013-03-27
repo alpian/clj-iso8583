@@ -31,23 +31,13 @@
 ;     "653e3c43727970746f6772616d496e66" "6f726d6174696f6e446174613e38303c" "2f43727970746f6772616d496e666f72" "6d6174696f6e446174613e3c2f496363"
 ;     "526571756573743e3c2f496363446174" "613e3033494e54"]))
 
-(defn bitmap [number]
-  (let [first-byte (bit-shift-left 1 number)]
-    (println first-byte)
-    (println (.length (binary/bytes-to-ascii first-byte)))
-    (println "fb:" (binary/bytes-to-hex (binary/bytes-to-ascii first-byte)) "<")
-    (apply str 
-;    (binary/bytes-to-ascii (bit-shift-left 1 number))
-    [(binary/bytes-to-ascii first-byte)
-     (binary/bytes-to-ascii (binary/hex-to-bytes "00000000000000"))])))
-
 (defn field-definition-for [])
 
 (defn write [field-definitions fields] 
   (str 
     (:message-type fields)
     (let [field-definition (field-definition-for field-definitions :pan)]
-      (bitmap (first field-definition)))
+      (binary/bytes-to-string (binary/bitmap [(first field-definition)])))
     "16"
     (:pan fields))) 
 
