@@ -29,7 +29,7 @@
      [42 :card-acceptor-id (fixed-length-field 15)]
      [43 :card-acceptor-name-location (fixed-length-field 40)]
      [49 :transaction-currency (fixed-length-field 3)]
-     [52 :pin-data (fixed-length-field 8) :decoder bytes-to-hex]
+     [52 :pin-data (fixed-length-field 8) :codec {:decoder bytes-to-hex}]
      [56 :message-reason-code (variable-length-field 3)]
      [100 :receiving-institution-id-code (variable-length-field 2)]
      [123 :pos-data-code (variable-length-field 3)]

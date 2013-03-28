@@ -33,13 +33,20 @@
 
 (defn field-definition-for [])
 
+(defn- field-name-of [field-definition]
+  (:name (second field-definition)))
+
 (defn write [field-definitions fields] 
   (str 
     (:message-type fields)
-    (let [field-definition (field-definition-for field-definitions :pan)]
-      (binary/bytes-to-string (binary/bitmap [(first field-definition)])))
-    "16"
-    (:pan fields))) 
+    (if-let [present-field-definitions (seq (sort-by first (filter #(contains? fields (field-name-of %)) (seq field-definitions))))]
+      (apply str
+        (binary/bytes-to-string (binary/bitmap (map first (sort-by first present-field-definitions))))
+        (for [field-definition present-field-definitions
+              :let [field-descriptors (second field-definition)
+                    value ((:name field-descriptors) fields)
+                    writer (:writer field-descriptors)]]
+          (writer value (:encoder field-descriptors))))))) 
 
 (defn find-first [pred coll]
   (some #(when (pred %) %) coll))
@@ -53,12 +60,14 @@
 (fact "Can write the message-type"
   (write (format-iso8583/field-definitions) {:message-type "0200"}) => "0200")
 
-(fact "Can write the bitmap"
+(fact "Can write a few fields"
   (binary/bytes-to-hex 
     (write (format-iso8583/field-definitions) 
       {:message-type "0200"
-       :pan "1111222233334444"})) => 
-    (str (binary/bytes-to-hex "0200") "4000000000000000" (binary/bytes-to-hex "161111222233334444")))
+       :pan "1111222233334444"
+       :processing-code "011000"
+       :transaction-amount "000000006660"})) => 
+    (str (binary/bytes-to-hex "0200") "7000000000000000" (binary/bytes-to-hex "161111222233334444011000000000006660")))
 
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]
