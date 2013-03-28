@@ -44,9 +44,8 @@
         (binary/bytes-to-string (binary/bitmap (map first (sort-by first present-field-definitions))))
         (for [field-definition present-field-definitions
               :let [field-descriptors (second field-definition)
-                    value ((:name field-descriptors) fields)
-                    writer (:writer field-descriptors)]]
-          (writer value (:encoder field-descriptors))))))) 
+                    value ((:name field-descriptors) fields)]]
+          ((:writer field-descriptors) value)))))) 
 
 (defn find-first [pred coll]
   (some #(when (pred %) %) coll))

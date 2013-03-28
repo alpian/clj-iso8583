@@ -23,9 +23,7 @@
          remaining-input input
          fields {}]
     (if-let [field-definition (get field-definitions field-number)]
-        (let [reader (:reader field-definition)
-              decoder (:decoder field-definition)
-              [field-content remaining-input] (reader remaining-input decoder)]
+        (let [[field-content remaining-input] ((:reader field-definition) remaining-input)]
           (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
         [fields remaining-input])))
 

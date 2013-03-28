@@ -3,23 +3,23 @@
 
 (defn variable-length-field [length-of-length] 
   {:reader 
-     (fn [input decoder]
+     (fn [decoder input]
        (let [[length-bytes remaining-input] (split-at length-of-length input)
              length (Integer/parseInt (bytes-to-ascii length-bytes))
              [field-bytes remaining-input] (split-at length remaining-input)]
          [(bytes-to-ascii field-bytes) remaining-input]))
    :writer 
-     (fn [value encoder] 
+     (fn [encoder value] 
        (str (count value) (encoder value)))
    })
 
 (defn fixed-length-field [length]
   {:reader 
-     (fn [input decoder]
+     (fn [decoder input]
        (let [[field-bytes remaining-input] (split-at length input)]
          [(decoder field-bytes) remaining-input]))
    :writer 
-     (fn [value encoder] (encoder value))
+     (fn [encoder value] (encoder value))
    })
 
 (defn field-definition 
@@ -28,12 +28,11 @@
    {reader :reader writer :writer} & 
    {:keys [codec] :or {codec {:decoder bytes-to-ascii 
                               :encoder identity}}}]
-  [field-number 
-   {:name name
-    :reader reader 
-    :writer writer 
-    :decoder (:decoder codec) 
-    :encoder (:encoder codec)}])
+  (let [{:keys [decoder encoder]} codec]
+    [field-number 
+     {:name name
+      :reader (partial reader decoder) 
+      :writer (partial writer encoder)}]))
 
 (defn make-field-definitions [descriptions]
   (let [make-field-definition #(apply field-definition %)]
