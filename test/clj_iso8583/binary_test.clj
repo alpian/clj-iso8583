@@ -9,8 +9,10 @@
 (fact (bytes-to-hex (long-to-bytes (long 1))) => "0000000000000001")
 (fact (bytes-to-hex (long-to-bytes (long 2r0001110010111010100110000111011001010100001000111001100100010001))) => "1CBA987654239911")
 
-(fact "F23E46D529E09100" => (bytes-to-hex (bitmap [1 2 3 4 7 11 12 13 14 15 18 22 23 25 26 28 30 32 35 37 40 41 42 43 49 52 56])))
-(fact "FFFFFFFFFFFFFFFF" => (bytes-to-hex (bitmap (range 1 65 1))))
+(fact (bytes-to-hex (little-endian-bitmap [1])) => "8000000000000000")
+
+(fact (bytes-to-hex (little-endian-bitmap [1 2 3 4 7 11 12 13 14 15 18 22 23 25 26 28 30 32 35 37 40 41 42 43 49 52 56])) => "F23E46D529E09100")
+(fact (bytes-to-hex (little-endian-bitmap (range 1 65 1))) => "FFFFFFFFFFFFFFFF")
 
 (fact 
   (set-bits (byte 0x35)) => [0 2 4 5]
