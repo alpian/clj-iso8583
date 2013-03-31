@@ -14,14 +14,16 @@
     [(map #(+ % offset) bitmap) remaining-input]))
 
 (defn bitmap-of [input]
-  (let [[primary-bits remaining-input] (read-bitmap input 0)]
-    (if (field-set? 1 primary-bits) 
-      (let [[secondary-bits remaining-input] (read-bitmap remaining-input 64)]
-        (if (field-set? 65 secondary-bits)
-          (let [[tertiary-bits remaining-input] (read-bitmap remaining-input 128)]
-              [(concat (remove #{1} primary-bits) (remove #{65} secondary-bits) tertiary-bits) remaining-input])
-          [(concat (remove #{1} primary-bits) secondary-bits) remaining-input]))
-      [primary-bits remaining-input])))
+  (let [[all-bits remaining-input] 
+          (let [[primary-bits remaining-input] (read-bitmap input 0)]
+            (if (field-set? 1 primary-bits) 
+              (let [[secondary-bits remaining-input] (read-bitmap remaining-input 64)]
+                (if (field-set? 65 secondary-bits)
+                  (let [[tertiary-bits remaining-input] (read-bitmap remaining-input 128)]
+                      [(concat primary-bits secondary-bits tertiary-bits) remaining-input])
+                  [(concat primary-bits secondary-bits) remaining-input]))
+              [primary-bits remaining-input]))] 
+    [(remove #{1 65} all-bits) remaining-input]))
 
 (defn parse-fields [field-definitions bitmap input]
   (loop [field-number (first bitmap)
