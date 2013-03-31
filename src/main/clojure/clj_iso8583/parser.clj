@@ -8,14 +8,20 @@
 (defn- field-set? [bit-index bitmap] 
   (some #{bit-index} bitmap))
 
+(defn- read-bitmap [input offset]
+  (let [[bitmap-bytes remaining-input] (split-at 8 input)
+        bitmap (binary/little-endian-set-bits bitmap-bytes)]
+    [(map #(+ % offset) bitmap) remaining-input]))
+
 (defn bitmap-of [input]
-  (let [[primary-bitmap-bytes rest] (split-at 8 input)
-        primary-bitmap (binary/little-endian-set-bits primary-bitmap-bytes)]
-    (if (field-set? 1 primary-bitmap) 
-          (let [[secondary-bitmap-bytes rest] (split-at 8 rest)
-                secondary-bitmap (binary/little-endian-set-bits secondary-bitmap-bytes)]
-            [(concat (remove #{1} primary-bitmap) (map #(+ % 64) secondary-bitmap)) rest])
-          [primary-bitmap rest])))
+  (let [[primary-bits remaining-input] (read-bitmap input 0)]
+    (if (field-set? 1 primary-bits) 
+      (let [[secondary-bits remaining-input] (read-bitmap remaining-input 64)]
+        (if (field-set? 65 secondary-bits)
+          (let [[tertiary-bits remaining-input] (read-bitmap remaining-input 128)]
+              [(concat (remove #{1} primary-bits) (remove #{65} secondary-bits) tertiary-bits) remaining-input])
+          [(concat (remove #{1} primary-bits) secondary-bits) remaining-input]))
+      [primary-bits remaining-input])))
 
 (defn parse-fields [field-definitions bitmap input]
   (loop [field-number (first bitmap)

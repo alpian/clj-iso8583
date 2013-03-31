@@ -1,6 +1,7 @@
 (ns clj-iso8583.parser-test
   (:require [clj-iso8583.binary :as binary]
             [clj-iso8583.parser :as parser]
+            [clj-iso8583.format :as format]
             [clj-iso8583.format-iso8583 :as format-iso8583])
   (:use clojure.test midje.sweet))
 
@@ -122,6 +123,10 @@
 
 (fact "Can extract the pos data code"
   (:pos-data-code (parsed-message)) => "511201515001002")
+
+(fact "Can extract something from the tertiary bitmap"
+  (let [parser (parser/parser (format/make-field-definitions [[130 :high-field (format/fixed-length-field 3)]]))] 
+    (:high-field (parser (binary/hex-to-bytes "30323030800000000000000080000000000000004000000000000000313233")))) => "123")
 
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]

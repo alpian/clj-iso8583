@@ -16,11 +16,11 @@
 (defn bytes-to-string [array-of-bytes]
   (new String array-of-bytes iso-8859-1-charset))
 
-(defn binary-string-to-hex [binary-string]
-  (bytes-to-hex (.getBytes binary-string iso-8859-1-charset)))
-
 (defn bytes-to-hex [bytes]
   (apply str (map #(format "%02X" (byte %)) bytes)))
+
+(defn binary-string-to-hex [binary-string]
+  (bytes-to-hex (.getBytes binary-string iso-8859-1-charset)))
 
 (defn long-to-bytes [number]
   (byte-array (map #(ubyte (bit-and 0xFF (bit-shift-right number %))) (reverse (range 0 64 8)))))
