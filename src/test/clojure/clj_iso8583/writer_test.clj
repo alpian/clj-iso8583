@@ -20,4 +20,3 @@
        :processing-code "011000"
        :transaction-amount "000000006660"})) => 
     (str (binary/bytes-to-hex "0200") "7000000000000000" (binary/bytes-to-hex "161111222233334444011000000000006660")))
-

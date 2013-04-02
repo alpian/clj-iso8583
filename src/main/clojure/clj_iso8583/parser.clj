@@ -13,6 +13,11 @@
         bitmap (binary/little-endian-set-bits bitmap-bytes)]
     [(map #(+ % offset) bitmap) remaining-input]))
 
+(defn- validate-trailing-data [input]
+  (if (= 0 (count input))
+    {:is-valid? true} 
+    {:is-valid? false :errors [(format "Trailing data found after message: '0x%s'" (binary/bytes-to-hex input))]}))
+
 (defn bitmap-of [input]
   (let [[all-bits remaining-input] 
           (let [[primary-bits remaining-input] (read-bitmap input 0)]
@@ -45,6 +50,7 @@
   (let [[message-type remaining-input] (message-type-of input)
         [fields remaining-input] (parse-bitmap-message field-definitions remaining-input)
         parsed-message (assoc fields :message-type message-type)]
-    parsed-message))
+    {:validation-result (validate-trailing-data remaining-input)
+     :message parsed-message}))
 
 (defn parser [field-definitions] (partial parse-full-message field-definitions))
