@@ -4,4 +4,5 @@
   :dependencies [[org.clojure/clojure "1.5.0"]]
   :profiles {:dev {:dependencies [[midje "1.5.0"]]}}
   :source-paths ["src/main/clojure"]
+  :test-paths ["src/test/clojure"]
   :java-source-paths ["src/main/java"])

@@ -3,10 +3,6 @@
             [clj-iso8583.format-iso8583 :as format-iso8583])
   (:use clojure.test midje.sweet clj-iso8583.writer))
 
-(println (binary/binary-string-to-hex (write 
-  (clj-iso8583.format/make-field-definitions [[130 :high-field (clj-iso8583.format/fixed-length-field 3)]])
-  {:message-type "0200" :high-field "123"})))
-
 (fact "Can write the message-type"
   (write (format-iso8583/field-definitions) {:message-type "0200"}) => "0200")
 

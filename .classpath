@@ -18,6 +18,7 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src/main/clojure"/>
 	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/test/clojure"/>
 	<classpathentry kind="lib" path="target/classes">
 		<attributes>
 			<attribute name="optional" value="true"/>
