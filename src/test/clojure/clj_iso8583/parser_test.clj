@@ -135,6 +135,12 @@
     (:is-valid? (:validation-result result)) => false
     (:errors (:validation-result result)) => ["Trailing data found after message: '0x3435'"]))
 
+(fact "A field too short is reported as a validation error"
+  (let [parser (parser/parser (format/make-field-definitions [[2 :field (format/fixed-length-field 3)]]))
+        result (parser (binary/hex-to-bytes "3032303040000000000000003132"))] 
+    (:is-valid? (:validation-result result)) => false
+    (:errors (:validation-result result)) => ["Insufficient data for field (2, field): '0x3132'"]))
+
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]
 ;   [Fixed  n       6 006] 003 [011000]
