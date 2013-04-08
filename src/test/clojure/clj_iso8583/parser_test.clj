@@ -35,7 +35,7 @@
 
 (defn parsed-message [] 
   (let [parser (parser/parser (format-iso8583/field-definitions))] 
-    (:message (parser (binary/hex-to-bytes full-message)))))
+    (parser (binary/hex-to-bytes full-message))))
 
 (fact "Can extract the message-type"
   (:message-type (parsed-message)) => "0200")
@@ -126,20 +126,26 @@
 
 (fact "Can extract something from the tertiary bitmap"
   (let [parser (parser/parser (format/make-field-definitions [[130 :high-field (format/fixed-length-field 3)]]))] 
-    (:high-field (:message (parser (binary/hex-to-bytes "30323030800000000000000080000000000000004000000000000000313233"))))) => "123")
+    (:high-field (parser (binary/hex-to-bytes "30323030800000000000000080000000000000004000000000000000313233")))) => "123")
 
 (fact "Too much data is reported as a validation error"
   (let [parser (parser/parser (format/make-field-definitions [[2 :field (format/fixed-length-field 3)]]))
         result (parser (binary/hex-to-bytes "3032303040000000000000003132333435"))] 
-    (:field (:message result)) => "123"
-    (:is-valid? (:validation-result result)) => false
-    (:errors (:validation-result result)) => ["Trailing data found after message: '0x3435'"]))
+    (:field result) => "123"
+    (:is-valid? result) => false
+    (:errors result) => ["Trailing data found after message: '0x3435'"]))
 
 (fact "A field too short is reported as a validation error"
   (let [parser (parser/parser (format/make-field-definitions [[2 :field (format/fixed-length-field 3)]]))
         result (parser (binary/hex-to-bytes "3032303040000000000000003132"))] 
-    (:is-valid? (:validation-result result)) => false
-    (:errors (:validation-result result)) => ["Insufficient data for field (2, field): '0x3132'"]))
+    (:is-valid? result) => false
+    (:errors result) => ["Insufficient data for field (2, field): '0x3132'"]))
+
+(fact "When the message type is too short it is reported as a validation error"
+  (let [parser (parser/parser (format/make-field-definitions []))
+        result (parser (binary/hex-to-bytes "303230"))] 
+    (:is-valid? result) => false
+    (:errors result) => ["(message-type) Error: Insufficient data. The data: [303230]"]))
 
 ;0200:
 ;   [LLVAR  n    ..19 016] 002 [5813390006433321]

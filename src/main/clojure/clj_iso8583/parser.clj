@@ -1,9 +1,14 @@
 (ns clj-iso8583.parser
   (:require [clj-iso8583.binary :as binary]))
 
+(defn- error [field-name error-message data]
+  {:errors [(str "(" (name field-name) ") Error: " error-message ". The data: [" data "]")]})
+
 (defn message-type-of [input]
-  (let [[message-type-bytes remaining-input] (split-at 4 input)]
-    [(binary/bytes-to-ascii message-type-bytes) remaining-input]))
+  (if (> (count input) 4)
+    (let [[message-type-bytes remaining-input] (split-at 4 input)]
+      [{:message-type (binary/bytes-to-ascii message-type-bytes)} remaining-input])
+    [(error :message-type "Insufficient data" (binary/bytes-to-hex input)) nil]))
 
 (defn- field-set? [bit-index bitmap] 
   (some #{bit-index} bitmap))
@@ -14,9 +19,8 @@
     [(map #(+ % offset) bitmap) remaining-input]))
 
 (defn- validate-trailing-data [input]
-  (if (= 0 (count input))
-    {:is-valid? true} 
-    {:is-valid? false :errors [(format "Trailing data found after message: '0x%s'" (binary/bytes-to-hex input))]}))
+  (when (not (= 0 (count input))) 
+    {:errors [(format "Trailing data found after message: '0x%s'" (binary/bytes-to-hex input))]}))
 
 (defn bitmap-of [input]
   (let [[all-bits remaining-input] 
@@ -48,9 +52,10 @@
   "Parses an ISO message and returns a map of all the fields of that message"
   [field-definitions input]
   (let [[message-type remaining-input] (message-type-of input)
-        [fields remaining-input] (parse-bitmap-message field-definitions remaining-input)
-        parsed-message (assoc fields :message-type message-type)]
-    {:validation-result (validate-trailing-data remaining-input)
-     :message parsed-message}))
+        [fields remaining-input] (when (empty? (:errors message-type)) (parse-bitmap-message field-definitions remaining-input))]
+    (let [all-fields (merge-with concat message-type fields (validate-trailing-data remaining-input))]
+      (if (not (empty? (:errors all-fields))) 
+        (merge {:is-valid? false} all-fields) 
+        all-fields))))
 
 (defn parser [field-definitions] (partial parse-full-message field-definitions))
