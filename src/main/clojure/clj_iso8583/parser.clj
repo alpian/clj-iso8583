@@ -5,7 +5,7 @@
   {:errors [(str "(" (name field-name) ") Error: " error-message ". The data: [" data "]")]})
 
 (defn message-type-of [input]
-  (if (> (count input) 4)
+  (if (>= (count input) 4)
     (let [[message-type-bytes remaining-input] (split-at 4 input)]
       [{:message-type (binary/bytes-to-ascii message-type-bytes)} remaining-input])
     [(error :message-type "Insufficient data" (binary/bytes-to-hex input)) nil]))
@@ -34,14 +34,23 @@
               [primary-bits remaining-input]))] 
     [(remove #{1 65} all-bits) remaining-input]))
 
+(defn- no-errors? [potential]
+  (empty? (:errors potential)))
+
 (defn parse-fields [field-definitions bitmap input]
   (loop [field-number (first bitmap)
          bitmap (rest bitmap)
          remaining-input input
          fields {}]
     (if-let [field-definition (get field-definitions field-number)]
-        (let [[field-content remaining-input] ((:reader field-definition) remaining-input)]
-          (recur (first bitmap) (rest bitmap) remaining-input (assoc fields (:name field-definition) field-content)))
+        (let [[parsed-field remaining-input] ((:reader field-definition) remaining-input)]
+          (recur 
+            (first bitmap) 
+            (rest bitmap) 
+            remaining-input 
+            (if (no-errors? parsed-field) 
+              (assoc fields (:name field-definition) parsed-field) 
+              (merge-with concat fields parsed-field))))
         [fields remaining-input])))
 
 (defn parse-bitmap-message [field-definitions input]
@@ -54,8 +63,8 @@
   (let [[message-type remaining-input] (message-type-of input)
         [fields remaining-input] (when (empty? (:errors message-type)) (parse-bitmap-message field-definitions remaining-input))]
     (let [all-fields (merge-with concat message-type fields (validate-trailing-data remaining-input))]
-      (if (not (empty? (:errors all-fields))) 
-        (merge {:is-valid? false} all-fields) 
-        all-fields))))
+      (if (no-errors? all-fields) 
+        all-fields
+        (merge {:is-valid? false} all-fields)))))
 
 (defn parser [field-definitions] (partial parse-full-message field-definitions))

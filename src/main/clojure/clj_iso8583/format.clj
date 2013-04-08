@@ -1,5 +1,5 @@
 (ns clj-iso8583.format
-  (:use [clj-iso8583.binary :only [bytes-to-ascii]]))
+  (:use [clj-iso8583.binary :only [bytes-to-ascii bytes-to-hex]]))
 
 (defn variable-length-field [length-of-length] 
   {:reader 
@@ -13,11 +13,16 @@
        (str (count value) (encoder value)))
    })
 
+(defn- error [field-name error-message data]
+  {:errors [(str "(" (name field-name) ") Error: " error-message ". The data: [" data "]")]})
+
 (defn fixed-length-field [length]
   {:reader 
      (fn [decoder input]
-       (let [[field-bytes remaining-input] (split-at length input)]
-         [(decoder field-bytes) remaining-input]))
+       (if (>= (count input) length)
+         (let [[field-bytes remaining-input] (split-at length input)]
+           [(decoder field-bytes) remaining-input])
+         [(error "field-name" (str "Less than " length " bytes available") (bytes-to-hex input))]))
    :writer 
      (fn [encoder value] (encoder value))
    })

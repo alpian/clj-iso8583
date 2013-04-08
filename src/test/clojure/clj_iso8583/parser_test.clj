@@ -139,7 +139,7 @@
   (let [parser (parser/parser (format/make-field-definitions [[2 :field (format/fixed-length-field 3)]]))
         result (parser (binary/hex-to-bytes "3032303040000000000000003132"))] 
     (:is-valid? result) => false
-    (:errors result) => ["Insufficient data for field (2, field): '0x3132'"]))
+    (:errors result) => ["(field-name) Error: Less than 3 bytes available. The data: [3132]"]))
 
 (fact "When the message type is too short it is reported as a validation error"
   (let [parser (parser/parser (format/make-field-definitions []))
