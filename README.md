@@ -1,4 +1,4 @@
-# clj-iso8583
+# com.oakmac.iso8583
 
 A Clojure library for parsing ISO8583 messages into Clojure maps.
 

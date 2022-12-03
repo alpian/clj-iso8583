@@ -1,4 +1,4 @@
-package com.ind.clojure;
+package com.oakmac.iso8583.interop;
 
 public final class Binary {
     public static final byte unsignedByteCast(Object x) {

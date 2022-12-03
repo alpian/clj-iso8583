@@ -1,9 +1,10 @@
-(ns clj-iso8583.format-iso8583
-  (:use [clj-iso8583.format]
-        [clj-iso8583.binary :only [bytes-to-hex]])
-  (:require [clj-iso8583.binary :as binary]))
+(ns com.oakmac.iso8583.format-iso8583
+  (:require
+    [com.oakmac.iso8583.binary :as binary]
+    [com.oakmac.iso8583.binary :refer [bytes-to-hex]]
+    [com.oakmac.iso8583.format :refer [fixed-length-field make-field-definitions variable-length-field]]))
 
-(defn field-definitions [] 
+(defn field-definitions []
   (make-field-definitions
     [[2 :pan (variable-length-field 2)]
      [3 :processing-code (fixed-length-field 6)]
@@ -33,5 +34,5 @@
      [56 :message-reason-code (variable-length-field 3)]
      [100 :receiving-institution-id-code (variable-length-field 2)]
      [123 :pos-data-code (variable-length-field 3)]
-     [127 :postilion-private-data (variable-length-field 6)]
-     ]))
+     [127 :postilion-private-data (variable-length-field 6)]]))
+

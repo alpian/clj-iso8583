@@ -1,6 +1,7 @@
-(ns clj-iso8583.writer
-  (:require [clj-iso8583.binary :as binary]
-            [clj-iso8583.format-iso8583 :as format-iso8583]))
+(ns com.oakmac.iso8583.writer
+  (:require
+    [com.oakmac.iso8583.binary :as binary]
+    [com.oakmac.iso8583.format-iso8583 :as format-iso8583]))
 
 (defn- find-first [pred coll]
   (some #(when (pred %) %) coll))

@@ -8,3 +8,4 @@ pom.xml
 .settings
 target
 *.diff
+.DS_Store

@@ -1,12 +1,14 @@
-(ns clj-iso8583.binary
-  (:import java.nio.charset.Charset))
+(ns com.oakmac.iso8583.binary
+  (:import
+    java.nio.charset.Charset
+    [com.oakmac.iso8583.interop Binary]))
 
 (def iso-8859-1-charset (Charset/forName "ISO-8859-1"))
 
 (defn ubyte
   "Coerce to unsigned byte"
   {:tag Byte
-   :inline (fn  [x] `(. com.ind.clojure.Binary (unsignedByteCast ~x)))}
+   :inline (fn  [x] `(. Binary (unsignedByteCast ~x)))}
   [#^Number x]
   (. x (byteValue)))
 

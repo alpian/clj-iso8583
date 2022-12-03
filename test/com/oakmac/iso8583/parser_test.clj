@@ -1,11 +1,11 @@
 (ns com.oakmac.iso8583.parser-test
   (:require
-    [clj-iso8583.binary :as binary]
-    [clj-iso8583.format :as format]
-    [clj-iso8583.format-iso8583 :as format-iso8583]
-    [clj-iso8583.parser :as parser]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is testing]]))
+    [clojure.test :refer [deftest is testing]]
+    [com.oakmac.iso8583.binary :as binary]
+    [com.oakmac.iso8583.format :as format]
+    [com.oakmac.iso8583.format-iso8583 :as format-iso8583]
+    [com.oakmac.iso8583.parser :as parser]))
 
 (def full-message
   (str/join

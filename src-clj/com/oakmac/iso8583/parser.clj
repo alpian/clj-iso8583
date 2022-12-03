@@ -1,5 +1,6 @@
-(ns clj-iso8583.parser
-  (:require [clj-iso8583.binary :as binary]))
+(ns com.oakmac.iso8583.parser
+  (:require
+    [com.oakmac.iso8583.binary :as binary]))
 
 (defn- error [field-name error-message data]
   {:errors [(str "(" (name field-name) ") Error: " error-message ". The data: [" data "]")]})

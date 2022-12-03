@@ -1,7 +1,7 @@
 (ns com.oakmac.iso8583.binary-test
   (:require
-    [clj-iso8583.binary :as binary]
-    [clojure.test :refer [deftest is]]))
+    [clojure.test :refer [deftest is]]
+    [com.oakmac.iso8583.binary :as binary]))
 
 (deftest hex-to-bytes-test
   (is (= (binary/hex-to-bytes "010203")
