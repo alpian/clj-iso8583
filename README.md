@@ -2,6 +2,13 @@
 
 A Clojure library for parsing ISO8583 messages into Clojure maps.
 
+## Versioning
+
+This is an updated fork of [alpian/clj-iso8583]. The core logic is largely unchanged,
+but the project has been updated to use more modern Clojure practices.
+
+[alpian/clj-iso8583]:https://github.com/alpian/clj-iso8583
+
 ## Usage
 
 ### Parsing
@@ -29,6 +36,7 @@ lein test
 
 ## License
 
-Copyright © 2012 Ian Davies
+Original project copyright © 2012 Ian Davies.
+Additional changes copyright © 2022 Chris Oakman.
 
-Distributed under the Eclipse Public License, the same as Clojure.
+Distributed under the [Eclipse Public License](LICENSE.txt).
