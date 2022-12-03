@@ -6,15 +6,26 @@ A Clojure library for parsing ISO8583 messages into Clojure maps.
 
 ### Parsing
 
-    ((parser field-definitions) message-bytes)
+```clj
+((parser field-definitions) message-bytes)
+```
 
 ### Writing
 
-    (write field-definitions {:pan "1111222233334444" :processing-code "010000" :transaction-amount "000000110000"})
+```clj
+(write field-definitions {:pan "1111222233334444" :processing-code "010000" :transaction-amount "000000110000"})
+```
 
-### Fields
+## Development
 
-Coming soon...
+Install [leiningen], then from the project directory:
+
+```sh
+# run unit tests
+lein test
+```
+
+[leiningen]:https://leiningen.org/
 
 ## License
 
