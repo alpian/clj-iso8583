@@ -1,10 +1,6 @@
 (ns com.oakmac.iso8583.writer
   (:require
-    [com.oakmac.iso8583.binary :as binary]
-    [com.oakmac.iso8583.format-iso8583 :as format-iso8583]))
-
-(defn- find-first [pred coll]
-  (some #(when (pred %) %) coll))
+    [com.oakmac.iso8583.binary :as binary]))
 
 (defn- field-name-of [field-definition]
   (:name (second field-definition)))
@@ -30,7 +26,7 @@
 (defn write [field-definitions fields] 
   (str 
     (:message-type fields)
-    (if-let [present-field-definitions (seq (sort-by first (filter #(contains? fields (field-name-of %)) (seq field-definitions))))]
+    (when-let [present-field-definitions (seq (sort-by first (filter #(contains? fields (field-name-of %)) (seq field-definitions))))]
       (apply str
         (write-bitmap (map first present-field-definitions))
         (for [field-definition present-field-definitions

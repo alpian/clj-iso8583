@@ -62,10 +62,10 @@
   "Parses an ISO message and returns a map of all the fields of that message"
   [field-definitions input]
   (let [[message-type remaining-input] (message-type-of input)
-        [fields remaining-input] (when (empty? (:errors message-type)) (parse-bitmap-message field-definitions remaining-input))]
-    (let [all-fields (merge-with concat message-type fields (validate-trailing-data remaining-input))]
-      (if (no-errors? all-fields) 
-        all-fields
-        (merge {:is-valid? false} all-fields)))))
+        [fields remaining-input] (when (empty? (:errors message-type)) (parse-bitmap-message field-definitions remaining-input))
+        all-fields (merge-with concat message-type fields (validate-trailing-data remaining-input))]
+    (if (no-errors? all-fields)
+      all-fields
+      (merge {:is-valid? false} all-fields))))
 
 (defn parser [field-definitions] (partial parse-full-message field-definitions))

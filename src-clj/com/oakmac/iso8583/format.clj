@@ -4,7 +4,7 @@
 
 (defn variable-length-field [length-of-length]
   {:reader
-   (fn [decoder input]
+   (fn [_decoder input]
      (let [[length-bytes remaining-input] (split-at length-of-length input)
            length (Integer/parseInt (bytes-to-ascii length-bytes))
            [field-bytes remaining-input] (split-at length remaining-input)]

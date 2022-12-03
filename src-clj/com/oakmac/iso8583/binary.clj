@@ -36,7 +36,7 @@
 (defmulti set-bits (fn [input] (if (instance? Iterable input) :iterable :single-byte)))
 
 (defmethod set-bits :single-byte [byte]
-  (keep-indexed #(if %2 %1) (map #(bit-test byte %) (range 0 8))))
+  (keep-indexed #(when %2 %1) (map #(bit-test byte %) (range 0 8))))
 
 (defmethod set-bits :iterable [bytes]
   (let [number-of-bytes (count bytes)
