@@ -24,15 +24,15 @@
     {:errors [(format "Trailing data found after message: '0x%s'" (binary/bytes-to-hex input))]}))
 
 (defn bitmap-of [input]
-  (let [[all-bits remaining-input
-          (let [[primary-bits remaining-input] (read-bitmap input 0)]
-            (if (field-set? 1 primary-bits)
-              (let [[secondary-bits remaining-input] (read-bitmap remaining-input 64)]
-                (if (field-set? 65 secondary-bits)
-                  (let [[tertiary-bits remaining-input] (read-bitmap remaining-input 128)]
-                      [(concat primary-bits secondary-bits tertiary-bits) remaining-input])
-                  [(concat primary-bits secondary-bits) remaining-input]))
-              [primary-bits remaining-input]))]]
+  (let [[all-bits remaining-input]
+        (let [[primary-bits remaining-input] (read-bitmap input 0)]
+          (if (field-set? 1 primary-bits)
+            (let [[secondary-bits remaining-input] (read-bitmap remaining-input 64)]
+              (if (field-set? 65 secondary-bits)
+                (let [[tertiary-bits remaining-input] (read-bitmap remaining-input 128)]
+                    [(concat primary-bits secondary-bits tertiary-bits) remaining-input])
+                [(concat primary-bits secondary-bits) remaining-input]))
+            [primary-bits remaining-input]))]
     [(remove #{1 65} all-bits) remaining-input]))
 
 (defn- no-errors? [potential]
