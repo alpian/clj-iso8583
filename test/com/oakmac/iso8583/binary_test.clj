@@ -3,6 +3,16 @@
     [clojure.test :refer [deftest is]]
     [com.oakmac.iso8583.binary :as binary]))
 
+(deftest ubyte-test
+  (is (= (binary/ubyte 0) 0))
+  (is (= (binary/ubyte 24) 24))
+  (is (= (binary/ubyte 100) 100))
+  (is (= (binary/ubyte 164) -92))
+  (is (= (binary/ubyte 212) -44))
+  (is (= (binary/ubyte 255) -1))
+  (is (thrown-with-msg? IllegalArgumentException #"Value out of range" (binary/ubyte -1)))
+  (is (thrown-with-msg? IllegalArgumentException #"Value out of range" (binary/ubyte 256))))
+
 (deftest hex-to-bytes-test
   (is (= (binary/hex-to-bytes "010203")
          [1 2 3])))
