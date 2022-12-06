@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4.0] - 2022-12-06
 
+- added unit tests for `com.oakmac.iso8583.binary/ubyte`
 - remove Java interop code for simpler distribution
 
 ## [0.3.0] - 2022-12-02
