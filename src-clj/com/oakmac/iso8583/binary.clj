@@ -1,16 +1,16 @@
 (ns com.oakmac.iso8583.binary
   (:import
-    java.nio.charset.Charset
-    [com.oakmac.iso8583.interop Binary]))
+    [java.nio.charset Charset]))
 
 (def iso-8859-1-charset (Charset/forName "ISO-8859-1"))
 
 (defn ubyte
   "Coerce to unsigned byte"
-  {:tag Byte
-   :inline (fn  [x] `(. Binary (unsignedByteCast ~x)))}
-  [#^Number x]
-  (. x (byteValue)))
+  [^Number x]
+  (let [l (long x)]
+    (if (or (< l 0) (> l 255))
+      (throw (IllegalArgumentException. (str "Value out of range for unsigned byte: " x)))
+      (unchecked-byte l))))
 
 (defn bytes-to-ascii [bytes]
   (new String (byte-array bytes) iso-8859-1-charset))

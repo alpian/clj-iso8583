@@ -5,5 +5,4 @@
   :url "https://github.com/oakmac/com.oakmac.iso8583"
   :dependencies [[org.clojure/clojure "1.11.1"]]
   :source-paths ["src-clj/"]
-  :java-source-paths ["src-java/"]
   :test-paths ["test/"])
