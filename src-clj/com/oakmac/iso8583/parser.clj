@@ -11,7 +11,7 @@
       [{:message-type (binary/bytes-to-ascii message-type-bytes)} remaining-input])
     [(error :message-type "Insufficient data" (binary/bytes-to-hex input)) nil]))
 
-(defn- field-set? [bit-index bitmap] 
+(defn- field-set? [bit-index bitmap]
   (some #{bit-index} bitmap))
 
 (defn- read-bitmap [input offset]
@@ -20,7 +20,7 @@
     [(map #(+ % offset) bitmap) remaining-input]))
 
 (defn- validate-trailing-data [input]
-  (when (not (= 0 (count input))) 
+  (when (not (= 0 (count input)))
     {:errors [(format "Trailing data found after message: '0x%s'" (binary/bytes-to-hex input))]}))
 
 (defn bitmap-of [input]
@@ -45,12 +45,12 @@
          fields {}]
     (if-let [field-definition (get field-definitions field-number)]
         (let [[parsed-field remaining-input] ((:reader field-definition) remaining-input)]
-          (recur 
-            (first bitmap) 
-            (rest bitmap) 
-            remaining-input 
-            (if (no-errors? parsed-field) 
-              (assoc fields (:name field-definition) parsed-field) 
+          (recur
+            (first bitmap)
+            (rest bitmap)
+            remaining-input
+            (if (no-errors? parsed-field)
+              (assoc fields (:name field-definition) parsed-field)
               (merge-with concat fields parsed-field))))
         [fields remaining-input])))
 

@@ -18,13 +18,13 @@
   (let [tertiary-bitmap-bits (seq (map #(- % 128) (bits-in-range 128 193 set-bits)))
         secondary-bitmap-bits (seq (flag-next-bitmap-set (map #(- % 64) (bits-in-range 64 129 set-bits)) tertiary-bitmap-bits))
         primary-bitmap-bits (flag-next-bitmap-set (bits-in-range 0 65 set-bits) secondary-bitmap-bits)]
-    (str 
+    (str
       (bitmap-string primary-bitmap-bits)
       (when secondary-bitmap-bits (bitmap-string secondary-bitmap-bits))
       (when tertiary-bitmap-bits (bitmap-string tertiary-bitmap-bits)))))
 
-(defn write [field-definitions fields] 
-  (str 
+(defn write [field-definitions fields]
+  (str
     (:message-type fields)
     (when-let [present-field-definitions (seq (sort-by first (filter #(contains? fields (field-name-of %)) (seq field-definitions))))]
       (apply str

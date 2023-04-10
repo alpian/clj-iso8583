@@ -18,7 +18,7 @@
   {:errors [(str "(" (name field-name) ") Error: " error-message ". The data: [" data "]")]})
 
 (defn fixed-length-field [length]
-  {:reader 
+  {:reader
    (fn [decoder input]
      (if (>= (count input) length)
        (let [[field-bytes remaining-input] (split-at length input)]
@@ -31,8 +31,8 @@
 (defn field-definition
   [field-number
    name
-   {reader :reader writer :writer} & 
-   {:keys [codec] :or {codec {:decoder bytes-to-ascii 
+   {reader :reader writer :writer} &
+   {:keys [codec] :or {codec {:decoder bytes-to-ascii
                               :encoder identity}}}]
   (let [{:keys [decoder encoder]} codec]
     [field-number

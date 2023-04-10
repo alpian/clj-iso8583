@@ -12,7 +12,7 @@
 
 (deftest binary-test
   (testing "Sets the first bit in the primary bitmap for a secondary bitmap if there is a bit set in the secondary bitmap, like 66"
-    (is (= (binary/binary-string-to-hex (writer/write-bitmap [66])) 
+    (is (= (binary/binary-string-to-hex (writer/write-bitmap [66]))
            (str "8000000000000000" "4000000000000000"))))
   (testing "Sets the last bit in the primary bitmap for a tertiary bitmap if there is a bit set in the tertiary bitmap, like 129"
     (is (= (binary/binary-string-to-hex (writer/write-bitmap [129]))
