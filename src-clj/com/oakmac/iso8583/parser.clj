@@ -44,15 +44,15 @@
          remaining-input input
          fields {}]
     (if-let [field-definition (get field-definitions field-number)]
-        (let [[parsed-field remaining-input] ((:reader field-definition) remaining-input)]
-          (recur
-            (first bitmap)
-            (rest bitmap)
-            remaining-input
-            (if (no-errors? parsed-field)
-              (assoc fields (:name field-definition) parsed-field)
-              (merge-with concat fields parsed-field))))
-        [fields remaining-input])))
+      (let [[parsed-field remaining-input] ((:reader field-definition) remaining-input)]
+        (recur
+          (first bitmap)
+          (rest bitmap)
+          remaining-input
+          (if (no-errors? parsed-field)
+            (assoc fields (:name field-definition) parsed-field)
+            (merge-with concat fields parsed-field))))
+      [fields remaining-input])))
 
 (defn parse-bitmap-message [field-definitions input]
   (let [[bitmap remaining-input] (bitmap-of input)]
