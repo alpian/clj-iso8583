@@ -28,16 +28,16 @@
    :writer
    (fn [encoder value] (encoder value))})
 
-(defn field-definition 
-  [field-number 
+(defn field-definition
+  [field-number
    name
    {reader :reader writer :writer} & 
    {:keys [codec] :or {codec {:decoder bytes-to-ascii 
                               :encoder identity}}}]
   (let [{:keys [decoder encoder]} codec]
-    [field-number 
+    [field-number
      {:name name
-      :reader (partial reader decoder) 
+      :reader (partial reader decoder)
       :writer (partial writer encoder)}]))
 
 (defn make-field-definitions [descriptions]
