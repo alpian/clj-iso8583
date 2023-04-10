@@ -40,10 +40,10 @@
 
 (defmethod set-bits :iterable [bytes]
   (let [number-of-bytes (count bytes)
-        offset-for (fn [index] (- (* (- number-of-bytes 1) 8) (* index 8)))] 
+        offset-for (fn [index] (- (* (- number-of-bytes 1) 8) (* index 8)))]
     (-> (keep-indexed (fn [index item] (let [offset (offset-for index)] (map #(+ % offset) (set-bits item)))) bytes)
         flatten
         sort)))
 
 (defn little-endian-set-bits [bytes]
-  (sort (map #(- (* 8 (count bytes)) %) (set-bits bytes)))) 
+  (sort (map #(- (* 8 (count bytes)) %) (set-bits bytes))))
