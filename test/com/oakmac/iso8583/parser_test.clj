@@ -83,10 +83,10 @@
       (is (= (:errors msg) ["Trailing data found after message: '0x3435'"]))))
 
   (testing "A field too short is reported as a validation error"
-    (let [parser (parser/parser (format/make-field-definitions [[2 :field (format/fixed-length-field 3)]]))
+    (let [parser (parser/parser (format/make-field-definitions [[2 :foo (format/fixed-length-field 3)]]))
           msg (parser (binary/hex-to-bytes "3032303040000000000000003132"))]
       (is (false? (:is-valid? msg)))
-      (is (= (:errors msg) ["(field-name) Error: Less than 3 bytes available. The data: [3132]"]))))
+      (is (= (:errors msg) ["(field=foo) Error: Less than 3 bytes available. The data: [3132]"]))))
 
   (testing "When the message type is too short it is reported as a validation error"
     (let [parser (parser/parser (format/make-field-definitions []))
