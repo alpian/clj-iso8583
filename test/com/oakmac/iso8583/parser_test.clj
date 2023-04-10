@@ -91,5 +91,5 @@
   (testing "When the message type is too short it is reported as a validation error"
     (let [parser (parser/parser (format/make-field-definitions []))
           msg (parser (binary/hex-to-bytes "303230"))]
-      (is (false?(:is-valid? msg)))
+      (is (false? (:is-valid? msg)))
       (is (= (:errors msg) ["(message-type) Error: Insufficient data. The data: [303230]"])))))
