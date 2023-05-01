@@ -1,6 +1,16 @@
 (ns com.oakmac.iso8583.format
   (:require
-    [com.oakmac.iso8583.binary :refer [bytes-to-ascii bytes-to-hex]]))
+    [com.oakmac.iso8583.binary :refer [bytes-to-ascii bytes-to-hex]]
+    [com.oakmac.iso8583.util.string :as util.str]))
+
+
+(defn- pad-left-with [p l v]
+  (if (< (count v) l)
+    (let [s (concat (repeat (- l (count v)) p) v)]
+      (apply str (take l s)))
+    v))
+
+
 
 (defn variable-length-field [field-length]
   {:reader
@@ -12,7 +22,8 @@
 
    :writer
    (fn [encoder-fn _field-name value]
-     (str (count value) (encoder-fn value)))})
+     ; (str (util.str/left-pad (str (count value)) field-length "0") (encoder-fn value))
+     (str (pad-left-with "0" field-length (str (count value))) (encoder-fn value)))})
 
 (defn- error [field-name error-msg data]
   {:errors [(str "(field=" (name field-name) ") Error: " error-msg ". The data: [" data "]")]})
